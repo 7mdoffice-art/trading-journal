@@ -1,146 +1,121 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { useState } from "react";
 
-export default function AddTrade() {
-  const [form, setForm] = useState({
-    symbol: "",
-    direction: "buy",
-    entry: "",
-    exit: "",
-    size: "",
-  });
+type Trade = {
+  id: string;
+  symbol: string;
+  direction: string;
+  entry_price: number;
+  exit_price: number;
+  position_size: number;
+  pnl: number;
+  result: string;
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+export default function Home() {
+  const [trades, setTrades] = useState<Trade[]>([]);
 
-    const entry = Number(form.entry);
-    const exit = Number(form.exit);
-    const size = Number(form.size);
+  useEffect(() => {
+    const loadTrades = async () => {
+      const { data, error } = await supabase.from("trades").select("*");
 
-    if (!form.symbol.trim()) {
-      alert("Symbol required");
-      return;
-    }
+      if (error) {
+        console.error(error);
+        return;
+      }
 
-    if ([entry, exit, size].some((v) => !isFinite(v))) {
-      alert("Enter valid numbers");
-      return;
-    }
+      setTrades(data || []);
+    };
 
-    if (size <= 0) {
-      alert("Size must be > 0");
-      return;
-    }
+    loadTrades();
+  }, []);
 
-    const pnl =
-      form.direction === "buy"
-        ? (exit - entry) * size
-        : (entry - exit) * size;
+  // 🔥 STATS
+  const totalPnL = trades.reduce((sum, t) => sum + t.pnl, 0);
 
-    try {
-      const { data, error } = await supabase
-        .from("trades")
-        .insert([
-          {
-            symbol: form.symbol,
-            direction: form.direction,
-            entry_price: entry,
-            exit_price: exit,
-            position_size: size,
-            pnl,
-            result: pnl > 0 ? "win" : "loss",
-          },
-        ])
-        .select();
+  const wins = trades.filter((t) => t.result === "win");
+  const losses = trades.filter((t) => t.result === "loss");
 
-      if (error) throw error;
+  const winRate =
+    trades.length > 0 ? (wins.length / trades.length) * 100 : 0;
 
-      console.log("SUCCESS:", data);
-      alert("✅ Trade saved");
+  const avgWin =
+    wins.length > 0
+      ? wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length
+      : 0;
 
-      setForm({
-        symbol: "",
-        direction: "buy",
-        entry: "",
-        exit: "",
-        size: "",
-      });
-
-    } catch (err: any) {
-      console.error("❌ ERROR:", err);
-      alert(err?.message || "Failed to save trade");
-    }
-  };
+  const avgLoss =
+    losses.length > 0
+      ? losses.reduce((sum, t) => sum + t.pnl, 0) / losses.length
+      : 0;
 
   return (
-    <div className="p-10 max-w-md mx-auto">
-      <h1 className="text-2xl mb-4">Add Trade</h1>
+    <div className="p-10 max-w-3xl mx-auto text-white">
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <h1 className="text-3xl mb-6">📊 Dashboard</h1>
 
-        <input
-          required
-          value={form.symbol}
-          placeholder="BTCUSDT"
-          className="border p-2"
-          onChange={(e) =>
-            setForm({ ...form, symbol: e.target.value.toUpperCase() })
-          }
-        />
+      {/* ✅ STATS */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
 
-        <select
-          value={form.direction}
-          className="border p-2"
-          onChange={(e) =>
-            setForm({ ...form, direction: e.target.value })
-          }
-        >
-          <option value="buy">Buy</option>
-          <option value="sell">Sell</option>
-        </select>
+        <div className="bg-zinc-900 p-4 rounded">
+          <p>Total PNL</p>
+          <p className={totalPnL >= 0 ? "text-green-400" : "text-red-400"}>
+            {totalPnL.toFixed(2)}
+          </p>
+        </div>
 
-        <input
-          required
-          type="number"
-          step="any"
-          value={form.entry}
-          placeholder="60000"
-          className="border p-2"
-          onChange={(e) =>
-            setForm({ ...form, entry: e.target.value })
-          }
-        />
+        <div className="bg-zinc-900 p-4 rounded">
+          <p>Win Rate</p>
+          <p>{winRate.toFixed(1)}%</p>
+        </div>
 
-        <input
-          required
-          type="number"
-          step="any"
-          value={form.exit}
-          placeholder="62000"
-          className="border p-2"
-          onChange={(e) =>
-            setForm({ ...form, exit: e.target.value })
-          }
-        />
+        <div className="bg-zinc-900 p-4 rounded">
+          <p>Avg Win</p>
+          <p className="text-green-400">{avgWin.toFixed(2)}</p>
+        </div>
 
-        <input
-          required
-          type="number"
-          step="any"
-          value={form.size}
-          placeholder="0.1"
-          className="border p-2"
-          onChange={(e) =>
-            setForm({ ...form, size: e.target.value })
-          }
-        />
+        <div className="bg-zinc-900 p-4 rounded">
+          <p>Avg Loss</p>
+          <p className="text-red-400">{avgLoss.toFixed(2)}</p>
+        </div>
 
-        <button className="bg-black text-white p-2">
-          Add Trade
-        </button>
-      </form>
+      </div>
+
+      {/* ✅ TRADES LIST */}
+      {trades.length === 0 ? (
+        <p>No trades yet</p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {trades.map((trade) => (
+            <div
+              key={trade.id}
+              className="border p-4 rounded bg-zinc-900"
+            >
+              <p><b>Symbol:</b> {trade.symbol}</p>
+              <p><b>Type:</b> {trade.direction}</p>
+              <p><b>Entry:</b> {trade.entry_price}</p>
+              <p><b>Exit:</b> {trade.exit_price}</p>
+              <p><b>Size:</b> {trade.position_size}</p>
+
+              <p>
+                <b>PNL:</b>{" "}
+                <span
+                  className={
+                    trade.pnl >= 0 ? "text-green-400" : "text-red-400"
+                  }
+                >
+                  {trade.pnl}
+                </span>
+              </p>
+
+              <p><b>Result:</b> {trade.result}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
     </div>
   );
 }
