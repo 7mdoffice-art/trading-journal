@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function AddTrade() {
+  const router = useRouter();
+
   const [symbol, setSymbol] = useState("");
   const [direction, setDirection] = useState("");
   const [entry, setEntry] = useState("");
@@ -33,7 +36,8 @@ export default function AddTrade() {
       return;
     }
 
-    alert("Trade added!");
+    // 🔥 THIS is the key fix
+    router.push("/");
   };
 
   return (
@@ -42,13 +46,15 @@ export default function AddTrade() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
 
-        <input placeholder="Symbol" onChange={(e) => setSymbol(e.target.value)} />
-        <input placeholder="Direction (buy/sell)" onChange={(e) => setDirection(e.target.value)} />
-        <input placeholder="Entry Price" onChange={(e) => setEntry(e.target.value)} />
-        <input placeholder="Exit Price" onChange={(e) => setExit(e.target.value)} />
-        <input placeholder="Position Size" onChange={(e) => setSize(e.target.value)} />
+        <input className="p-2 bg-zinc-800 rounded" placeholder="Symbol" onChange={(e) => setSymbol(e.target.value)} />
+        <input className="p-2 bg-zinc-800 rounded" placeholder="Direction (buy/sell)" onChange={(e) => setDirection(e.target.value)} />
+        <input className="p-2 bg-zinc-800 rounded" placeholder="Entry Price" onChange={(e) => setEntry(e.target.value)} />
+        <input className="p-2 bg-zinc-800 rounded" placeholder="Exit Price" onChange={(e) => setExit(e.target.value)} />
+        <input className="p-2 bg-zinc-800 rounded" placeholder="Position Size" onChange={(e) => setSize(e.target.value)} />
 
-        <button type="submit">Add Trade</button>
+        <button className="bg-white text-black p-2 rounded">
+          Add Trade
+        </button>
 
       </form>
     </div>
