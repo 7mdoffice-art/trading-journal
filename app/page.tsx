@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
@@ -287,10 +288,29 @@ export default function Home() {
           gap: 1, background: "#1e2330", border: "1px solid #1e2330",
           borderRadius: 4, overflow: "hidden", marginBottom: 16,
         }}>
+          {/* Start Balance */}
+          <div style={{ background: "#111318", padding: "14px 14px" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Start Balance</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: "#e2e8f0" }}>{fmt$(START_BALANCE)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{START_BALANCE.toLocaleString()} USDT</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#a0aec0", fontWeight: 500, marginTop: 3 }}>{fmtAED(START_BALANCE)}</div>
+          </div>
+          {/* Current Balance */}
+          <div style={{ background: "#111318", padding: "14px 14px" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Current Balance</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: cur >= START_BALANCE ? "#00d97e" : "#ff4d6a" }}>{fmt$(cur)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{Math.round(cur).toLocaleString()} USDT</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: cur >= START_BALANCE ? "#00d97e" : "#ff4d6a", fontWeight: 500, marginTop: 3 }}>{fmtAED(cur)}</div>
+          </div>
+          {/* Net P&L */}
+          <div style={{ background: "#111318", padding: "14px 14px" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Net P&L</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: netPnl >= 0 ? "#00d97e" : "#ff4d6a" }}>{fmt$(netPnl, true)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{fmtPct((netPnl / START_BALANCE) * 100, true)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: netPnl >= 0 ? "#00d97e" : "#ff4d6a", fontWeight: 500, marginTop: 3 }}>{fmtAED(netPnl)}</div>
+          </div>
+          {/* Other cells */}
           {([
-            { label: "Start Balance", value: fmt$(START_BALANCE), sub: `${START_BALANCE.toLocaleString()} USDT · ${fmtAED(START_BALANCE)}` },
-            { label: "Current Balance", value: fmt$(cur), sub: `${Math.round(cur).toLocaleString()} USDT · ${fmtAED(cur)}`, color: cur >= START_BALANCE ? "#00d97e" : "#ff4d6a" },
-            { label: "Net P&L", value: fmt$(netPnl, true), sub: `${fmtPct((netPnl / START_BALANCE) * 100, true)} · ${fmtAED(netPnl)}`, color: netPnl >= 0 ? "#00d97e" : "#ff4d6a" },
             { label: "Total Trades", value: String(trades.length), sub: `W/L: ${metrics?.wins.length ?? 0} / ${metrics?.losses.length ?? 0}`, color: "#3d8bff" },
             { label: "Win Rate", value: metrics ? fmtPct(metrics.winRate * 100) : "—", sub: "of all trades", color: (metrics?.winRate ?? 0) >= 0.5 ? "#00d97e" : "#ff4d6a" },
             { label: "Profit Factor", value: metrics?.profitFactor != null ? metrics.profitFactor.toFixed(2) : "—", sub: "gross W / gross L", color: (metrics?.profitFactor ?? 0) >= 1 ? "#00d97e" : "#ff4d6a" },
@@ -300,7 +320,7 @@ export default function Home() {
             <div key={c.label} style={{ background: "#111318", padding: "12px 14px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>{c.label}</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color: c.color || "#e2e8f0" }}>{c.value}</div>
-              {c.sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", marginTop: 2 }}>{c.sub}</div>}
+              {c.sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 4 }}>{c.sub}</div>}
             </div>
           ))}
         </div>
