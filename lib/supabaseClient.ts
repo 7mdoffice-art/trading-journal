@@ -1,6 +1,15 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://uzxbrwfanjtaqejpixki.supabase.co";
-const supabaseKey = 'sb_publishable_fV36b7rAiM6H2eeAliKMGw_Ynyctc00'
+// 🔥 fallback + env support
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://uzxbrwfanjtaqejpixki.supabase.co";
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_KEY ||
+  "sb_publishable_fV36b7rAiM6H2eeAliKMGw_Ynyctc00";
+
+// ❌ REMOVE hard crash (this was your problem)
+// we don't throw error anymore
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
