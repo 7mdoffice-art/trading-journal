@@ -1,6 +1,6 @@
 "use client";
 export const dynamic = 'force-dynamic';
-import { useRouter } from "next/navigation";
+
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
@@ -9,17 +9,6 @@ import {
   ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, BarChart, Bar,
 } from "recharts";
-
-export default function Home() {
-  const router = useRouter();
-
-useEffect(() => {
-  const auth = localStorage.getItem("auth");
-
-  if (!auth) {
-    router.push("/login");
-  }
-}, []);
 
 type Trade = {
   id: string;
