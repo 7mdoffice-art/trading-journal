@@ -1,6 +1,7 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
@@ -110,17 +111,35 @@ function Checkbox({ checked, onChange, indeterminate = false }: { checked: boole
 }
 
 export default function Home() {
+  const router = useRouter();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
-  useEffect(() => { loadTrades(); }, []);
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        router.push("/login");
+      }
+    };
+    checkUser();
+  }, []);
 
   const loadTrades = async () => {
     const { data } = await supabase
-      .from("trades").select("*").order("created_at", { ascending: true });
+      .from("trades")
+      .select("*")
+      .order("created_at", { ascending: true });
     setTrades(data || []);
     setSelectedIds(new Set());
+  };
+
+  useEffect(() => { loadTrades(); }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   const deleteTrade = async (id: string) => {
@@ -141,11 +160,8 @@ export default function Home() {
   const someSelected = selectedIds.size > 0 && selectedIds.size < trades.length;
 
   const toggleSelectAll = () => {
-    if (allSelected || someSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(trades.map(t => t.id)));
-    }
+    if (allSelected || someSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(trades.map(t => t.id)));
   };
 
   const deleteSelected = async () => {
@@ -273,11 +289,19 @@ export default function Home() {
             border: "1px solid rgba(0,217,126,0.25)", padding: "2px 8px", borderRadius: 2,
           }}>ANALYTICS</span>
         </div>
-        <Link href="/add-trade" style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
-          background: "#00d97e", color: "#000", padding: "7px 16px",
-          borderRadius: 3, textDecoration: "none", letterSpacing: "0.06em",
-        }}>+ ADD TRADE</Link>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button onClick={handleLogout} style={{
+            fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+            letterSpacing: "0.06em", padding: "7px 14px", borderRadius: 3,
+            background: "transparent", color: "#ff4d6a",
+            border: "1px solid rgba(255,77,106,0.3)", cursor: "pointer",
+          }}>LOGOUT</button>
+          <Link href="/add-trade" style={{
+            fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+            background: "#00d97e", color: "#000", padding: "7px 16px",
+            borderRadius: 3, textDecoration: "none", letterSpacing: "0.06em",
+          }}>+ ADD TRADE</Link>
+        </div>
       </div>
 
       <div style={{ padding: "20px 24px", maxWidth: 1400, margin: "0 auto" }}>
@@ -288,28 +312,24 @@ export default function Home() {
           gap: 1, background: "#1e2330", border: "1px solid #1e2330",
           borderRadius: 4, overflow: "hidden", marginBottom: 16,
         }}>
-          {/* Start Balance */}
           <div style={{ background: "#111318", padding: "14px 14px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Start Balance</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: "#e2e8f0" }}>{fmt$(START_BALANCE)}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{START_BALANCE.toLocaleString()} USDT</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#a0aec0", fontWeight: 500, marginTop: 3 }}>{fmtAED(START_BALANCE)}</div>
           </div>
-          {/* Current Balance */}
           <div style={{ background: "#111318", padding: "14px 14px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Current Balance</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: cur >= START_BALANCE ? "#00d97e" : "#ff4d6a" }}>{fmt$(cur)}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{Math.round(cur).toLocaleString()} USDT</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: cur >= START_BALANCE ? "#00d97e" : "#ff4d6a", fontWeight: 500, marginTop: 3 }}>{fmtAED(cur)}</div>
           </div>
-          {/* Net P&L */}
           <div style={{ background: "#111318", padding: "14px 14px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Net P&L</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: netPnl >= 0 ? "#00d97e" : "#ff4d6a" }}>{fmt$(netPnl, true)}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{fmtPct((netPnl / START_BALANCE) * 100, true)}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: netPnl >= 0 ? "#00d97e" : "#ff4d6a", fontWeight: 500, marginTop: 3 }}>{fmtAED(netPnl)}</div>
           </div>
-          {/* Other cells */}
           {([
             { label: "Total Trades", value: String(trades.length), sub: `W/L: ${metrics?.wins.length ?? 0} / ${metrics?.losses.length ?? 0}`, color: "#3d8bff" },
             { label: "Win Rate", value: metrics ? fmtPct(metrics.winRate * 100) : "—", sub: "of all trades", color: (metrics?.winRate ?? 0) >= 0.5 ? "#00d97e" : "#ff4d6a" },
@@ -444,10 +464,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Trade Log ── */}
+        {/* Trade Log */}
         <div style={{ background: "#111318", border: "1px solid #1e2330", borderRadius: 4 }}>
-
-          {/* Log Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #1e2330" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", letterSpacing: "0.1em", textTransform: "uppercase" }}>Trade Log</span>
@@ -461,38 +479,27 @@ export default function Home() {
               )}
             </div>
             {selectedIds.size > 0 && (
-              <button
-                onClick={deleteSelected}
-                disabled={bulkDeleting}
-                style={{
-                  fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600,
-                  letterSpacing: "0.06em", padding: "6px 14px", borderRadius: 3,
-                  background: bulkDeleting ? "rgba(255,77,106,0.15)" : "#ff4d6a",
-                  color: bulkDeleting ? "#ff4d6a" : "#000",
-                  border: bulkDeleting ? "1px solid rgba(255,77,106,0.3)" : "none",
-                  cursor: bulkDeleting ? "not-allowed" : "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
+              <button onClick={deleteSelected} disabled={bulkDeleting} style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.06em", padding: "6px 14px", borderRadius: 3,
+                background: bulkDeleting ? "rgba(255,77,106,0.15)" : "#ff4d6a",
+                color: bulkDeleting ? "#ff4d6a" : "#000",
+                border: bulkDeleting ? "1px solid rgba(255,77,106,0.3)" : "none",
+                cursor: bulkDeleting ? "not-allowed" : "pointer", transition: "all 0.15s",
+              }}>
                 {bulkDeleting ? "DELETING..." : `DELETE ${selectedIds.size} TRADE${selectedIds.size > 1 ? "S" : ""}`}
               </button>
             )}
           </div>
-
-          {/* Table Header */}
           <div style={{
-            display: "grid",
-            gridTemplateColumns: "32px 70px 55px 100px 100px 65px 100px 80px 75px 75px 65px",
-            padding: "8px 16px", borderBottom: "1px solid #1e2330", background: "#181c23",
-            alignItems: "center",
+            display: "grid", gridTemplateColumns: "32px 70px 55px 100px 100px 65px 100px 80px 75px 75px 65px",
+            padding: "8px 16px", borderBottom: "1px solid #1e2330", background: "#181c23", alignItems: "center",
           }}>
             <div><Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleSelectAll} /></div>
             {["SYMBOL", "SIDE", "ENTRY", "EXIT", "SIZE", "P&L", "RISK $", "RISK %", "R MULT", ""].map(h => (
               <div key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase" }}>{h}</div>
             ))}
           </div>
-
-          {/* Trade Rows */}
           {[...trades].reverse().map((t, i) => {
             const idx = trades.length - 1 - i;
             const bal = metrics?.balances[idx] ?? START_BALANCE;
@@ -502,19 +509,13 @@ export default function Home() {
             const hasStop = !!t.stop_loss;
             const isSelected = selectedIds.has(t.id);
             return (
-              <div
-                key={t.id}
-                className="trade-row"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "32px 70px 55px 100px 100px 65px 100px 80px 75px 75px 65px",
-                  padding: "10px 16px", borderBottom: "1px solid #1e2330",
-                  alignItems: "center", cursor: "default",
-                  background: isSelected ? "rgba(255,77,106,0.05)" : undefined,
-                  borderLeft: isSelected ? "2px solid rgba(255,77,106,0.5)" : "2px solid transparent",
-                  transition: "background 0.1s",
-                }}
-              >
+              <div key={t.id} className="trade-row" style={{
+                display: "grid", gridTemplateColumns: "32px 70px 55px 100px 100px 65px 100px 80px 75px 75px 65px",
+                padding: "10px 16px", borderBottom: "1px solid #1e2330", alignItems: "center", cursor: "default",
+                background: isSelected ? "rgba(255,77,106,0.05)" : undefined,
+                borderLeft: isSelected ? "2px solid rgba(255,77,106,0.5)" : "2px solid transparent",
+                transition: "background 0.1s",
+              }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <Checkbox checked={isSelected} onChange={() => toggleSelect(t.id)} />
                 </div>
@@ -550,7 +551,6 @@ export default function Home() {
               </div>
             );
           })}
-
           {trades.length === 0 && (
             <div style={{ padding: "40px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "#4a5568" }}>
               No trades yet — add your first trade to get started
