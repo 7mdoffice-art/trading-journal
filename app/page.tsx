@@ -24,7 +24,6 @@ type Trade = {
   created_at?: string;
 };
 
-const START_BALANCE = 25000;
 const AED_RATE = 3.6725;
 
 function fmtAED(v: number) {
@@ -115,6 +114,26 @@ export default function Home() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [startBalance, setStartBalance] = useState<number>(10000);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [balanceInput, setBalanceInput] = useState("");
+
+  // Load start balance from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("startBalance");
+    if (saved) setStartBalance(Number(saved));
+  }, []);
+
+  const saveStartBalance = () => {
+    const val = Number(balanceInput);
+    if (!val || val <= 0) return;
+    setStartBalance(val);
+    localStorage.setItem("startBalance", String(val));
+    setShowBalanceModal(false);
+    setBalanceInput("");
+  };
+
+  const START_BALANCE = startBalance;
 
   useEffect(() => {
     const checkUser = async () => {
@@ -312,8 +331,11 @@ export default function Home() {
           gap: 1, background: "#1e2330", border: "1px solid #1e2330",
           borderRadius: 4, overflow: "hidden", marginBottom: 16,
         }}>
-          <div style={{ background: "#111318", padding: "14px 14px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Start Balance</div>
+          <div style={{ background: "#111318", padding: "14px 14px", cursor: "pointer" }} onClick={() => { setBalanceInput(String(START_BALANCE)); setShowBalanceModal(true); }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#4a5568", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+              Start Balance
+              <span style={{ fontSize: 8, color: "#3d8bff", border: "1px solid rgba(61,139,255,0.3)", padding: "1px 4px", borderRadius: 2 }}>EDIT</span>
+            </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color: "#e2e8f0" }}>{fmt$(START_BALANCE)}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#718096", marginTop: 6 }}>{START_BALANCE.toLocaleString()} USDT</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#a0aec0", fontWeight: 500, marginTop: 3 }}>{fmtAED(START_BALANCE)}</div>
@@ -559,6 +581,51 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* ── Change Start Balance Modal ── */}
+      {showBalanceModal && (
+        <div onClick={() => setShowBalanceModal(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)', zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#111318', border: '1px solid #1e2330',
+            borderRadius: 4, padding: 24, width: 340,
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#718096', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #1e2330' }}>
+              Set Starting Balance
+            </div>
+            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#4a5568', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Amount (USD)</label>
+            <input
+              type='number'
+              placeholder='e.g. 10000'
+              value={balanceInput}
+              onChange={e => setBalanceInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveStartBalance()}
+              autoFocus
+              style={{
+                width: '100%', padding: '10px 12px', marginBottom: 14,
+                background: '#0a0b0d', border: '1px solid #1e2330',
+                borderRadius: 3, color: '#e2e8f0',
+                fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowBalanceModal(false)} style={{
+                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
+                padding: '9px 0', borderRadius: 3, border: '1px solid #1e2330',
+                background: 'transparent', color: '#4a5568', cursor: 'pointer',
+              }}>CANCEL</button>
+              <button onClick={saveStartBalance} style={{
+                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
+                padding: '9px 0', borderRadius: 3, border: 'none',
+                background: '#00d97e', color: '#000', cursor: 'pointer',
+              }}>SAVE</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
