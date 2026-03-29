@@ -24,7 +24,7 @@ type Trade = {
   created_at?: string;
 };
 
-const START_BALANCE = 10000;
+const START_BALANCE = 25000;
 const AED_RATE = 3.6725;
 
 function fmtAED(v: number) {
